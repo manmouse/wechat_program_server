@@ -2,14 +2,14 @@ var app = require('express')();
 var fs = require('fs');
 var http = require('http');
 var https = require('https');
-var privateKey  = fs.readFileSync('./private.pem', 'utf8');
-var certificate = fs.readFileSync('./file.crt', 'utf8');
+var privateKey  = fs.readFileSync('/srv/secrets/private.pem', 'utf8');
+var certificate = fs.readFileSync('/srv/secrets/file.crt', 'utf8');
 var credentials = {key: privateKey, cert: certificate};
 
 var httpServer = http.createServer(app);
 var httpsServer = https.createServer(credentials, app);
-var PORT = 8888;
-var SSLPORT = 9999;
+var PORT = 8889;
+var SSLPORT = 8890;
 
 httpServer.listen(PORT, function() {
     console.log('HTTP Server is running on: http://localhost:%s', PORT);
