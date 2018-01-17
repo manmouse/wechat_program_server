@@ -12,10 +12,9 @@ var httpsServer = https.createServer(credentials, app);
 var PORT = 8889;
 var SSLPORT = 8890;
 
-var getSessionKeyFromWechatServer = function (code) {
+var getSessionKeyFromWechatServer = function (code, appInfo) {
     var self = this;
     var getSessionHost = "https://api.weixin.qq.com/sns/jscode2session?";
-    var appInfo = require("/srv/app_info/wechat_program_1.json");
 
     return new Promise(function (resolve, reject) {
         var forScan_req = getSessionHost + "appid=" + appInfo.AppID + "&secret=" + appInfo.AppSecret + "&js_code=" + code + "&grant_type=authorization_code";
@@ -27,7 +26,12 @@ var getSessionKeyFromWechatServer = function (code) {
             });
 
             res.on('end', () => {
-                console.log(buf);
+                var ret = JSON.parse(buf);
+                var session_key = ret.session_key;
+                var expires_in = ret.expires_in;
+                var openid = ret.openid;
+
+                resolve(session_key);
             });
         }).on('error', (e) => {
             console.error(TAG, e);
@@ -56,7 +60,19 @@ app.get('/', function (req, res) {
 app.get('/getSession', function (req, res) {
     if (req.protocol === 'https') {
         console.log(req.query.code);
-        getSessionKeyFromWechatServer(req.query.code);
+        var appInfo = require("/srv/app_info/wechat_program_1.json");
+        getSessionKeyFromWechatServer(req.query.code, appInfo).then(
+            function (session_key) {
+                var WXBizDataCrypt = require('./utils/WXBizDataCrypt');
+                var pc = new WXBizDataCrypt(appInfo.AppID, session_key)
+
+                var data = pc.decryptData(req.query.encryptedData, req.query.iv);
+                console.log(data);
+            },
+            function () {
+
+            }
+        );
         res.status(200).send('Welcome to Safety Land!');
     }
     else {
